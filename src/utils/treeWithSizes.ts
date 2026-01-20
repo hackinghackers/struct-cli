@@ -67,7 +67,7 @@ export const addSizesToTree = (tree: TreeType[], basePath: string): TreeTypeWith
 /**
  * Convert tree with sizes to string format
  */
-export const treeWithSizesToString = (tree: TreeTypeWithSize[], tabChar: string = "  "): string => {
+export const treeWithSizesToString = (tree: TreeTypeWithSize[], tabChar = "  "): string => {
   let result = "";
   
   const buildString = (nodes: TreeTypeWithSize[], indent: boolean[]): void => {
