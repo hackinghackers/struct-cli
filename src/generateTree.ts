@@ -4,6 +4,7 @@ import path from "path";
 import { execSync } from "child_process";
 import { TreeType, treeJsonToString } from "@structure-codes/utils";
 import { getConfigPath, validatePath } from "./utils/utils";
+import { addSizesToTree, treeWithSizesToString } from "./utils/treeWithSizes";
 
 const getDefaults = () => {
   const configPath = getConfigPath();
@@ -42,11 +43,72 @@ type OptionsType = {
   ignore: string[];
   configIgnore: boolean;
   dirOnly: boolean;
+  fromfile: boolean;
+  du: boolean;
 };
 
 export const generateTree = (directory: string, options: OptionsType) => {
+  const { silent, json, output, editor, ignore: ignored, configIgnore, dirOnly, fromfile, du } = options;
+  
+  // When --fromfile is used, the directory argument is a file containing paths
+  if (fromfile) {
+    if (!validatePath(directory, "file")) return;
+    const fileContent = fs.readFileSync(directory, "utf8");
+    const paths = fileContent.split("\n").filter(line => line.trim() !== "");
+    
+    const tree: TreeType[] = [];
+    let _index = 0;
+    
+    paths.forEach((filePath) => {
+      const normalizedPath = filePath.trim().replace(/\\/g, "/");
+      const levels = normalizedPath.split("/");
+      let curr: TreeType[] = tree;
+      
+      levels.forEach((level) => {
+        if (!level) return;
+        
+        const branch = curr.find((leaf) => leaf.name === level);
+        if (branch) return (curr = branch.children);
+        curr.push({
+          name: level,
+          children: [],
+          _index,
+        });
+        _index++;
+        curr = curr[curr.length - 1].children;
+      });
+    });
+    
+    const treeString = treeJsonToString({ tree });
+    
+    if (output) {
+      if (!silent) console.info(`Writing data to ${output}`);
+      fs.writeFileSync(output, treeString);
+    }
+    
+    if (!silent && json) {
+      console.info(JSON.stringify(tree, null, 2));
+    } else if (!silent) {
+      console.info(treeString);
+    }
+    
+    if (editor) {
+      try {
+        execSync("code --help");
+      } catch {
+        return console.warn("Could not find code binary on path.");
+      }
+      const tmpDir = process.platform === "win32" ? process.env.TEMP : "/tmp";
+      const tmpFile = `fromfile_${Date.now()}.tree`;
+      const tmpPath = tmpDir + "/" + tmpFile;
+      fs.writeFileSync(tmpPath, treeString);
+      execSync(`code ${tmpPath}`);
+    }
+    
+    return;
+  }
+  
   if (!validatePath(directory, "dir")) return;
-  const { silent, json, output, editor, ignore: ignored, configIgnore, dirOnly } = options;
   const absolutePath = path.resolve(directory).replace(/\\/g, "/");
   const searchPath = `${absolutePath}/**/*${dirOnly ? "/" : ""}`;
   glob(
@@ -81,7 +143,10 @@ export const generateTree = (directory: string, options: OptionsType) => {
           curr = curr[0].children;
         });
       });
-      const treeString = treeJsonToString({ tree });
+      
+      // Add size information if --du is enabled
+      const finalTree = du ? addSizesToTree(tree, absolutePath) : tree;
+      const treeString = du ? treeWithSizesToString(finalTree) : treeJsonToString({ tree: finalTree });
 
       if (output) {
         if (!silent) console.info(`Writing data to ${output}`);
@@ -89,7 +154,7 @@ export const generateTree = (directory: string, options: OptionsType) => {
       }
 
       if (!silent && json) {
-        console.info(JSON.stringify(tree, null, 2));
+        console.info(JSON.stringify(finalTree, null, 2));
       } else if (!silent) {
         console.info(treeString);
       }

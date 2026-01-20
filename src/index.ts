@@ -33,6 +33,8 @@ import { checkConfig } from "./utils/checkConfig";
     .option("-j, --json", "print tree in json format")
     .option("-e, --editor", "open structure in new vscode window")
     .option("-s, --silent", "do not print anything to the console")
+    .option("--fromfile", "reads paths from files instead of file-system")
+    .option("--du", "compute size of directories by their contents")
     .action((directory, options) => {
       generateTree(directory, options);
     });
