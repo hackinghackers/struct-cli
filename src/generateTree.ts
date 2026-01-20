@@ -140,13 +140,13 @@ export const generateTree = (directory: string, options: OptionsType) => {
             _index,
           });
           _index++;
-          curr = curr[0].children;
+          curr = curr[curr.length - 1].children;
         });
       });
       
       // Add size information if --du is enabled
       const finalTree = du ? addSizesToTree(tree, absolutePath) : tree;
-      const treeString = du ? treeWithSizesToString(finalTree) : treeJsonToString({ tree: finalTree });
+      const treeString = du ? treeWithSizesToString(finalTree) : treeJsonToString({ tree });
 
       if (output) {
         if (!silent) console.info(`Writing data to ${output}`);

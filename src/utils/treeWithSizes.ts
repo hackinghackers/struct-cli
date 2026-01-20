@@ -8,6 +8,9 @@ interface TreeTypeWithSize extends TreeType {
   children: TreeTypeWithSize[];
 }
 
+// Padding width for size display
+const SIZE_PADDING_WIDTH = 10;
+
 /**
  * Compute size of a file or directory in bytes
  */
@@ -79,7 +82,7 @@ export const treeWithSizesToString = (tree: TreeTypeWithSize[], tabChar: string 
       prefix += isLast ? "└── " : "├── ";
       
       // Format size with fixed width for alignment
-      const sizeStr = node.size !== undefined ? `[${formatBytes(node.size).padStart(10)}]  ` : "";
+      const sizeStr = node.size !== undefined ? `[${formatBytes(node.size).padStart(SIZE_PADDING_WIDTH)}]  ` : "";
       
       result += `${sizeStr}${prefix}${node.name}\n`;
       
